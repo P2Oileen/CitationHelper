@@ -124,6 +124,42 @@ check_us() {
 check_us
 ```
 
+### Too Large html file
+If you meet an error that the curl html file is too large and your name could not be grep from it, we provide additional code to save your html file to a local temp and pcregrep it.
+
+如果你的Google scholar html文件太大了导致无法匹配到你的姓名，我们提供了以下代码来保存该文件到一个temp区然后用pcregrep来处理。
+
+```
+# The following code is helped with windsurf and Claude 3.5 sonnet.
+# Change this user id 把这里的id换成你自己的
+GOOGLE_SCHOLAR_USER_ID="LM7RNL4AAAAJ"
+
+check_me() {
+  # Save response to a temporary file instead of variable
+  temp_file=$(mktemp)
+  curl -s "https://scholar.google.com/citations?user=${GOOGLE_SCHOLAR_USER_ID}&hl=en" > "$temp_file"
+
+  # Get Citation using the file with increased buffer size
+  citations=$(pcregrep --buffer-size=1M -o '<td class="gsc_rsb_std">[0-9]*' "$temp_file" | pcregrep -o '[0-9]*' | head -n 1)
+  if [ -z "$citations" ]; then
+    citations="0"
+  fi
+
+  # Get Name using the file with increased buffer size
+  name=$(pcregrep --buffer-size=1M -o '<div id="gsc_prf_in">[^<]*</div>' "$temp_file" | sed 's/<[^>]*>//g')
+  if [ -z "$name" ]; then
+    name="unknown"
+  fi
+
+  # Clean up
+  rm "$temp_file"
+
+  echo "✨Hi $name, your Google Scholar citations✨: $citations."
+}
+
+check_me
+```
+
 Have Fun!
 
 P.S. This project was developed with the assistance of <a href="https://yuewen.cn/">跃问/Yuewen</a>, an AI assistant created by our group <a href="https://github.com/stepfun-ai">StepFun-ai</a>.
